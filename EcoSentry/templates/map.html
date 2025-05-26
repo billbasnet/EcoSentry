@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    #mapContainer {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .info-panel {
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .legend {
+        line-height: 18px;
+        color: #555;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
+    }
+    .risk-details {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Fire Risk Map</h1>
+            <p class="lead">Interactive visualization of current wildfire risks and active fires.</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-9">
+            <div id="mapContainer"></div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-panel mb-3">
+                <h4>Map Controls</h4>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="showFiresSwitch" checked>
+                    <label class="form-check-label" for="showFiresSwitch">Show Active Fires</label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="showRiskZonesSwitch" checked>
+                    <label class="form-check-label" for="showRiskZonesSwitch">Show Risk Zones</label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="showResourcesSwitch" checked>
+                    <label class="form-check-label" for="showResourcesSwitch">Show Resources</label>
+                </div>
+                <hr>
+                <label for="riskThreshold" class="form-label">Risk Threshold: <span id="thresholdValue">0.5</span></label>
+                <input type="range" class="form-range" min="0" max="1" step="0.1" value="0.5" id="riskThreshold">
+                <hr>
+                <button id="refreshMapBtn" class="btn btn-primary w-100">Refresh Data</button>
+            </div>
+
+            <div class="info-panel risk-details" id="riskDetails">
+                <h4>Area Details</h4>
+                <p class="text-muted">Click on a risk zone or fire marker to see details.</p>
+                <div id="detailsContent" style="display: none;">
+                    <h5 id="areaName"></h5>
+                    <div class="mb-2">
+                        <strong>Risk Level:</strong> <span id="riskLevel" class="badge"></span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Risk Score:</strong> <span id="riskScore"></span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Risk Factors:</strong>
+                        <ul id="riskFactors"></ul>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Recommended Actions:</strong>
+                        <ul id="recommendations"></ul>
+                    </div>
+                    <button id="alertBtn" class="btn btn-warning mt-2">Send Alert</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Regional Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="regionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Region</th>
+                                    <th>Risk Level</th>
+                                    <th>Risk Score</th>
+                                    <th>Primary Factors</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize the map
+    const map = L.map('mapContainer').setView([37.7749, -122.4194], 6);
+
+    // Add base tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Layer groups
+    const firesLayer = L.layerGroup().addTo(map);
+    const riskZonesLayer = L.layerGroup().addTo(map);
+    const resourcesLayer = L.layerGroup().addTo(map);
+
+    // Define risk color function
+    function getRiskColor(risk) {
+        return risk > 0.8 ? '#d73027' :
+               risk > 0.6 ? '#fc8d59' :
+               risk > 0.4 ? '#fee08b' :
+               risk > 0.2 ? '#d9ef8b' :
+                          '#91cf60';
+    }
+
+    // Define risk level text
+    function getRiskLevelText(risk) {
+        return risk > 0.8 ? 'Extreme' :
+               risk > 0.6 ? 'High' :
+               risk > 0.4 ? 'Medium' :
+               risk > 0.2 ? 'Low' :
+                          'Very Low';
+    }
+
+    // Define risk level class
+    function getRiskLevelClass(risk) {
+        return risk > 0.8 ? 'bg-danger' :
+               risk > 0.6 ? 'bg-warning text-dark' :
+               risk > 0.4 ? 'bg-info text-dark' :
+               risk > 0.2 ? 'bg-success' :
+                          'bg-success';
+    }
+
+    // Create the legend
+    const legend = L.control({position: 'bottomright'});
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        const grades = [0, 0.2, 0.4, 0.6, 0.8];
+        const labels = [];
+
+        div.innerHTML = '<h6>Risk Level</h6>';
+        
+        // Loop through risk intervals and generate colored box for each
+        for (let i = 0; i < grades.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + getRiskColor(grades[i] + 0.1) + '"></i> ' +
+                getRiskLevelText(grades[i]) + (grades[i + 1] ? '&ndash;' + getRiskLevelText(grades[i + 1]) + '<br>' : '+');
+        }
+        
+        return div;
+    };
+    legend.addTo(map);
+
+    // Function to update map with sample data
+    function loadSampleData() {
+        // Clear existing layers
+        firesLayer.clearLayers();
+        riskZonesLayer.clearLayers();
+        resourcesLayer.clearLayers();
+        
+        // Get risk threshold from slider
+        const riskThreshold = parseFloat(document.getElementById('riskThreshold').value);
+        
+        // Sample risk zones data
+        const riskZones = [
+            {
+                id: 1,
+                name: 'Northern Forest Region',
+                center: {lat: 37.7749, lng: -122.4194},
+                radius: 50000,
+                risk_score: 0.85,
+                risk_factors: ['High temperature', 'Low humidity', 'Dry vegetation']
+            },
+            {
+                id: 2,
+                name: 'Eastern Woodland',
+                center: {lat: 34.0522, lng: -118.2437},
+                radius: 40000,
+                risk_score: 0.65,
+                risk_factors: ['Moderate wind', 'Dry conditions']
+            },
+            {
+                id: 3,
+                name: 'Southern Valley',
+                center: {lat: 40.7128, lng: -74.0060},
+                radius: 30000,
+                risk_score: 0.35,
+                risk_factors: ['Recent precipitation']
+            },
+            {
+                id: 4,
+                name: 'Western Hills',
+                center: {lat: 39.7392, lng: -104.9903},
+                radius: 35000,
+                risk_score: 0.55,
+                risk_factors: ['Moderate temperature', 'Low wind']
+            },
+            {
+                id: 5,
+                name: 'Central Plains',
+                center: {lat: 32.7767, lng: -96.7970},
+                radius: 25000,
+                risk_score: 0.25,
+                risk_factors: ['High humidity', 'Recent rainfall']
+            }
+        ];
+        
+        // Sample active fires data
+        const activeFires = [
+            {
+                id: 101,
+                name: 'Redwood Complex Fire',
+                location: {lat: 37.8, lng: -122.5},
+                intensity: 0.9,
+                started: '2025-05-24'
+            },
+            {
+                id: 102,
+                name: 'Eagle Creek Fire',
+                location: {lat: 34.1, lng: -118.3},
+                intensity: 0.7,
+                started: '2025-05-25'
+            }
+        ];
+        
+        // Sample resources data
+        const resources = [
+            {
+                id: 201,
+                name: 'Team Alpha',
+                type: 'Fire Brigade',
+                location: {lat: 37.75, lng: -122.45},
+                personnel: 15
+            },
+            {
+                id: 202,
+                name: 'Team Bravo',
+                type: 'Helicopter Unit',
+                location: {lat: 34.05, lng: -118.25},
+                personnel: 8
+            },
+            {
+                id: 203,
+                name: 'Team Charlie',
+                type: 'Support Unit',
+                location: {lat: 40.70, lng: -74.05},
+                personnel: 10
+            }
+        ];
+        
+        // Add risk zones to map
+        if (document.getElementById('showRiskZonesSwitch').checked) {
+            riskZones.forEach(zone => {
+                if (zone.risk_score >= riskThreshold) {
+                    const circle = L.circle([zone.center.lat, zone.center.lng], {
+                        color: getRiskColor(zone.risk_score),
+                        fillColor: getRiskColor(zone.risk_score),
+                        fillOpacity: 0.4,
+                        radius: zone.radius
+                    }).addTo(riskZonesLayer);
+                    
+                    circle.bindTooltip(zone.name + ' - Risk: ' + zone.risk_score.toFixed(2));
+                    
+                    circle.on('click', function() {
+                        showDetails(zone);
+                    });
+                }
+            });
+        }
+        
+        // Add active fires to map
+        if (document.getElementById('showFiresSwitch').checked) {
+            activeFires.forEach(fire => {
+                const fireIcon = L.divIcon({
+                    html: `<div style="background-color: red; border-radius: 50%; width: 12px; height: 12px; box-shadow: 0 0 ${10 + fire.intensity * 20}px ${8 + fire.intensity * 8}px rgba(255, 0, 0, 0.6);"></div>`,
+                    className: 'fire-marker',
+                    iconSize: [20, 20]
+                });
+                
+                const marker = L.marker([fire.location.lat, fire.location.lng], {icon: fireIcon}).addTo(firesLayer);
+                marker.bindTooltip(fire.name + ' - Active since: ' + fire.started);
+                
+                marker.on('click', function() {
+                    // Create a risk-like object from fire data for the details panel
+                    const fireAsRisk = {
+                        id: fire.id,
+                        name: fire.name,
+                        risk_score: fire.intensity,
+                        risk_factors: ['Active fire', 'Started on ' + fire.started],
+                        is_active_fire: true
+                    };
+                    
+                    showDetails(fireAsRisk);
+                });
+            });
+        }
+        
+        // Add resources to map
+        if (document.getElementById('showResourcesSwitch').checked) {
+            resources.forEach(resource => {
+                const resourceIcon = L.divIcon({
+                    html: `<div style="background-color: blue; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">${resource.personnel}</div>`,
+                    className: 'resource-marker',
+                    iconSize: [24, 24]
+                });
+                
+                const marker = L.marker([resource.location.lat, resource.location.lng], {icon: resourceIcon}).addTo(resourcesLayer);
+                marker.bindTooltip(resource.name + ' - ' + resource.type);
+            });
+        }
+        
+        // Update table
+        updateTable(riskZones);
+    }
+
+    // Function to show details in the info panel
+    function showDetails(area) {
+        document.getElementById('detailsContent').style.display = 'block';
+        document.getElementById('areaName').textContent = area.name;
+        
+        const riskLevelElem = document.getElementById('riskLevel');
+        riskLevelElem.textContent = getRiskLevelText(area.risk_score);
+        riskLevelElem.className = 'badge ' + getRiskLevelClass(area.risk_score);
+        
+        document.getElementById('riskScore').textContent = area.risk_score.toFixed(2);
+        
+        const factorsElem = document.getElementById('riskFactors');
+        factorsElem.innerHTML = '';
+        area.risk_factors.forEach(factor => {
+            const li = document.createElement('li');
+            li.textContent = factor;
+            factorsElem.appendChild(li);
+        });
+        
+        // Generate recommendations based on risk level
+        const recommendationsElem = document.getElementById('recommendations');
+        recommendationsElem.innerHTML = '';
+        
+        let recommendations = [];
+        
+        if (area.is_active_fire) {
+            recommendations = [
+                'Deploy firefighting resources immediately',
+                'Evacuate nearby communities',
+                'Establish containment perimeter'
+            ];
+        } else if (area.risk_score > 0.8) {
+            recommendations = [
+                'Deploy preventive resources',
+                'Issue evacuation warnings',
+                'Establish firebreaks',
+                'Increase monitoring frequency'
+            ];
+        } else if (area.risk_score > 0.6) {
+            recommendations = [
+                'Increase patrols in the area',
+                'Prepare resource allocation plan',
+                'Alert local fire departments'
+            ];
+        } else if (area.risk_score > 0.4) {
+            recommendations = [
+                'Monitor conditions regularly',
+                'Review emergency response plans'
+            ];
+        } else {
+            recommendations = [
+                'Standard monitoring procedures',
+                'No additional action required'
+            ];
+        }
+        
+        recommendations.forEach(rec => {
+            const li = document.createElement('li');
+            li.textContent = rec;
+            recommendationsElem.appendChild(li);
+        });
+        
+        // Update alert button text based on whether it's an active fire
+        const alertBtn = document.getElementById('alertBtn');
+        if (area.is_active_fire) {
+            alertBtn.textContent = 'Send Evacuation Alert';
+            alertBtn.className = 'btn btn-danger mt-2';
+        } else {
+            alertBtn.textContent = 'Send Warning Alert';
+            alertBtn.className = 'btn btn-warning mt-2';
+        }
+    }
+
+    // Function to update the regions table
+    function updateTable(regions) {
+        const tableBody = document.getElementById('regionsTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+        
+        regions.sort((a, b) => b.risk_score - a.risk_score).forEach(region => {
+            const row = tableBody.insertRow();
+            
+            const nameCell = row.insertCell(0);
+            nameCell.textContent = region.name;
+            
+            const levelCell = row.insertCell(1);
+            const levelBadge = document.createElement('span');
+            levelBadge.className = 'badge ' + getRiskLevelClass(region.risk_score);
+            levelBadge.textContent = getRiskLevelText(region.risk_score);
+            levelCell.appendChild(levelBadge);
+            
+            const scoreCell = row.insertCell(2);
+            scoreCell.textContent = region.risk_score.toFixed(2);
+            
+            const factorsCell = row.insertCell(3);
+            factorsCell.textContent = region.risk_factors.join(', ');
+            
+            const actionsCell = row.insertCell(4);
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn btn-sm btn-outline-primary';
+            viewBtn.textContent = 'View on Map';
+            viewBtn.addEventListener('click', function() {
+                map.setView([region.center.lat, region.center.lng], 8);
+                showDetails(region);
+            });
+            actionsCell.appendChild(viewBtn);
+        });
+    }
+
+    // Event listeners
+    document.getElementById('showFiresSwitch').addEventListener('change', loadSampleData);
+    document.getElementById('showRiskZonesSwitch').addEventListener('change', loadSampleData);
+    document.getElementById('showResourcesSwitch').addEventListener('change', loadSampleData);
+    
+    document.getElementById('riskThreshold').addEventListener('input', function() {
+        document.getElementById('thresholdValue').textContent = this.value;
+        loadSampleData();
+    });
+    
+    document.getElementById('refreshMapBtn').addEventListener('click', function() {
+        // In a real app, this would fetch fresh data from the API
+        loadSampleData();
+        alert('Map data refreshed!');
+    });
+    
+    document.getElementById('alertBtn').addEventListener('click', function() {
+        // In a real app, this would send an actual alert
+        alert('Alert has been sent to authorities and local communities.');
+    });
+    
+    // Load initial data
+    loadSampleData();
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-5">
+        <div class="col-12">
+            <h1>About EcoSentry</h1>
+            <p class="lead">An AI-Powered Forest Fire Prediction & Prevention System designed to protect our environment.</p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-8">
+            <h2>Our Mission</h2>
+            <p>EcoSentry aims to combat one of the most destructive consequences of climate change: the increasing frequency and severity of wildfires. By leveraging the power of artificial intelligence, we've created a system that can predict, detect, and help prevent forest fires, potentially saving lives, protecting ecosystems, and reducing carbon emissions.</p>
+            
+            <h2 class="mt-4">The Problem</h2>
+            <p>Climate change has led to hotter, drier conditions in many parts of the world, creating ideal conditions for wildfires. These fires:</p>
+            <ul>
+                <li>Destroy millions of acres of forest annually</li>
+                <li>Threaten wildlife habitats and biodiversity</li>
+                <li>Endanger human communities and infrastructure</li>
+                <li>Release massive amounts of carbon dioxide, further accelerating climate change</li>
+                <li>Cost billions in damages and fire-fighting resources</li>
+            </ul>
+            
+            <h2 class="mt-4">Our Solution</h2>
+            <p>EcoSentry combines multiple AI technologies to create a comprehensive system for wildfire management:</p>
+            <div class="card-group mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Predictive Analytics</h5>
+                        <p class="card-text">Uses historical data, weather patterns, and terrain information to identify high-risk areas before fires start.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Early Detection</h5>
+                        <p class="card-text">Computer vision algorithms analyze satellite imagery to detect fires in their earliest stages when they're easiest to contain.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Resource Optimization</h5>
+                        <p class="card-text">AI recommends optimal allocation of firefighting resources based on risk levels and fire characteristics.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="mt-4">Technology Stack</h2>
+            <p>Our system is built using cutting-edge technologies:</p>
+            <ul>
+                <li><strong>Machine Learning:</strong> Trained on historical wildfire data to identify patterns and risk factors</li>
+                <li><strong>Computer Vision:</strong> Analyzes satellite imagery to detect smoke and fire signatures</li>
+                <li><strong>Weather API Integration:</strong> Incorporates real-time weather data for accurate predictions</li>
+                <li><strong>GIS Mapping:</strong> Visualizes risk areas and resource allocations on interactive maps</li>
+                <li><strong>Alert System:</strong> Provides timely warnings to communities and authorities</li>
+            </ul>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Environmental Impact</h5>
+                </div>
+                <div class="card-body">
+                    <p>By preventing and minimizing wildfires, EcoSentry helps:</p>
+                    <ul>
+                        <li>Preserve forest ecosystems</li>
+                        <li>Protect biodiversity</li>
+                        <li>Reduce carbon emissions</li>
+                        <li>Maintain natural carbon sinks</li>
+                        <li>Protect water resources</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Project Goals</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>Reduce wildfire detection time by 50%</li>
+                        <li>Improve prediction accuracy to over 85%</li>
+                        <li>Decrease the area burned by preventable fires by 30%</li>
+                        <li>Optimize resource allocation to save 20% in firefighting costs</li>
+                        <li>Create an open platform that can be deployed globally</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Future Enhancements</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Integration with IoT sensor networks</li>
+                        <li>Drone-based monitoring system</li>
+                        <li>Mobile app for field workers</li>
+                        <li>API for integration with emergency systems</li>
+                        <li>Expansion to other natural disasters</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2>How It Works</h2>
+            <div class="row mt-4">
+                <div class="col-md-3 text-center mb-4">
+                    <div class="bg-light p-3 rounded-circle mx-auto mb-3" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                        <span class="h1 text-primary">1</span>
+                    </div>
+                    <h5>Data Collection</h5>
+                    <p>Gathering weather data, satellite imagery, and historical fire information</p>
+                </div>
+                <div class="col-md-3 text-center mb-4">
+                    <div class="bg-light p-3 rounded-circle mx-auto mb-3" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                        <span class="h1 text-primary">2</span>
+                    </div>
+                    <h5>Risk Analysis</h5>
+                    <p>AI models process data to identify high-risk regions</p>
+                </div>
+                <div class="col-md-3 text-center mb-4">
+                    <div class="bg-light p-3 rounded-circle mx-auto mb-3" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                        <span class="h1 text-primary">3</span>
+                    </div>
+                    <h5>Continuous Monitoring</h5>
+                    <p>Scanning satellite imagery to detect early signs of fire</p>
+                </div>
+                <div class="col-md-3 text-center mb-4">
+                    <div class="bg-light p-3 rounded-circle mx-auto mb-3" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                        <span class="h1 text-primary">4</span>
+                    </div>
+                    <h5>Alert & Response</h5>
+                    <p>Providing alerts and resource recommendations to authorities</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h2>Our Team</h2>
+            <p class="lead">Built by passionate technologists for the AI Hackathon - Sustainability & Climate Tech Challenge</p>
+            <p>© 2025 EcoSentry Team</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
