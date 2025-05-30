@@ -19,8 +19,8 @@ EcoSentry is an innovative solution designed to predict, detect, and help preven
 ## Installation and Setup
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ecosentry.git
-cd ecosentry
+git clone https://github.com/billbasnet/EcoSentry.git
+cd EcoSentry
 
 # Create a virtual environment
 python -m venv venv
@@ -35,7 +35,7 @@ python app.py
 
 ## Project Structure
 ```
-ecosentry/
+EcoSentry/
 ├── app.py                  # Main Flask application
 ├── requirements.txt        # Python dependencies
 ├── models/                 # ML model scripts and saved models
@@ -63,4 +63,4 @@ ecosentry/
 MIT
 
 ## Contact
-For any inquiries, please contact [your-email@example.com](mailto:your-email@example.com)
+For any inquiries, please contact [basnetbill17@gmail.com](mailto:basnetbill17@gmail.com)
